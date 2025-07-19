@@ -1,6 +1,6 @@
 - 👋 Hi, I’m @captaindiallo
 - 👀 I’m a Product Manager..
-- 🌱 I’m currently learning Software Dev
+- 🌱 I love food and red whine.
 - 💞️ I’m looking to collaborate on anything in line with my current interest 
 - 📫 reach me on twitter.com/captaindiallo 
 
