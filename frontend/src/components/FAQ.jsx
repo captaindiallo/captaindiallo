@@ -1,9 +1,74 @@
-import React, { useState } from 'react';
-import { Plus, Minus } from 'lucide-react';
-import { faqs } from '../mock/data';
+import React, { useState, useEffect } from 'react';
+import { Plus, Loader, AlertCircle } from 'lucide-react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+// Fallback FAQs (from original mock data)
+const fallbackFaqs = [
+  {
+    id: 1,
+    question: "What makes Jiba Mobile different from other financing options?",
+    answer: "We offer 0% interest financing specifically designed for Africa's informal economy. Unlike traditional lenders, we understand the unique challenges of micro-businesses and provide flexible payment terms that work with your income."
+  },
+  {
+    id: 2,
+    question: "How do you determine my eligibility?",
+    answer: "We use AI-powered assessment that looks beyond traditional credit scores. We consider your business activity, mobile money transactions, social connections, and earning potential to make fair decisions."
+  },
+  {
+    id: 3,
+    question: "What happens if my device gets stolen or damaged?",
+    answer: "All our devices come with built-in protection coverage. If your device is stolen or damaged, we'll help you get a replacement quickly so your business doesn't suffer."
+  },
+  {
+    id: 4,
+    question: "Can I pay early without penalties?",
+    answer: "Absolutely! You can pay off your device early at any time without any penalties or extra fees. We encourage early payments when possible."
+  },
+  {
+    id: 5,
+    question: "What support do you provide after I get my device?",
+    answer: "We provide ongoing business training, technical support, and access to our network of merchants and partners to help you maximize your earning potential."
+  },
+  {
+    id: 6,
+    question: "Which countries do you currently serve?",
+    answer: "We're currently active in Ghana and Côte d'Ivoire, with plans to expand to Senegal, Egypt, Ethiopia, DRC, Tanzania, Sudan, Algeria, and Madagascar in the coming months."
+  }
+];
 
 const FAQ = () => {
   const [openItems, setOpenItems] = useState(new Set([1])); // First item open by default
+  const [faqs, setFaqs] = useState(fallbackFaqs);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch FAQs from backend
+  useEffect(() => {
+    const fetchFaqs = async () => {
+      try {
+        const response = await axios.get(`${API}/faqs`);
+        if (response.data && response.data.length > 0) {
+          setFaqs(response.data);
+          // Set first FAQ as open by default
+          if (response.data.length > 0) {
+            setOpenItems(new Set([response.data[0].id]));
+          }
+        }
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching FAQs:', err);
+        setError('Failed to load latest FAQs, showing cached content');
+        // Keep fallback FAQs
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFaqs();
+  }, []);
 
   const toggleItem = (id) => {
     const newOpenItems = new Set(openItems);
@@ -14,6 +79,21 @@ const FAQ = () => {
     }
     setOpenItems(newOpenItems);
   };
+
+  if (isLoading) {
+    return (
+      <section id="faq" className="py-20 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex p-4 bg-orange-100 text-orange-600 rounded-full mb-4">
+              <Loader className="animate-spin" size={32} />
+            </div>
+            <p className="text-gray-600">Loading frequently asked questions...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="faq" className="py-20 bg-gray-50">
@@ -26,6 +106,12 @@ const FAQ = () => {
             Got questions? We've got answers. Here are the most common questions 
             about our device financing program.
           </p>
+          {error && (
+            <div className="mt-4 text-sm text-amber-600 bg-amber-50 rounded-lg px-4 py-2 inline-block flex items-center">
+              <AlertCircle size={16} className="mr-2" />
+              {error}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

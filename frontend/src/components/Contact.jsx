@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { Send, User, Phone, Mail, Briefcase, MapPin, CheckCircle } from 'lucide-react';
+import { Send, User, Phone, Mail, Briefcase, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 import { countries, businessTypes } from '../mock/data';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    fullName: '',
+    full_name: '',
     email: '',
     phone: '',
     country: '',
-    businessType: '',
+    business_type: '',
     message: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [successData, setSuccessData] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,33 +27,54 @@ const Contact = () => {
       ...prev,
       [name]: value
     }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    
-    // Reset form after success message
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        country: '',
-        businessType: '',
-        message: ''
+    try {
+      const response = await axios.post(`${API}/leads`, {
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone,
+        country: formData.country,
+        business_type: formData.business_type,
+        message: formData.message
       });
-    }, 3000);
+
+      setSuccessData(response.data);
+      setIsSubmitted(true);
+      
+      // Reset form after success message
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setSuccessData(null);
+        setFormData({
+          full_name: '',
+          email: '',
+          phone: '',
+          country: '',
+          business_type: '',
+          message: ''
+        });
+      }, 5000);
+      
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      setError(
+        err.response?.data?.detail || 
+        'Failed to submit application. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const isFormValid = formData.fullName && formData.email && formData.phone && formData.country && formData.businessType;
+  const isFormValid = formData.full_name && formData.email && formData.phone && formData.country && formData.business_type;
 
   if (isSubmitted) {
     return (
@@ -61,9 +88,11 @@ const Contact = () => {
               Application Submitted Successfully!
             </h3>
             <p className="text-xl text-gray-600 mb-6 max-w-2xl mx-auto">
-              Thank you for your interest in Jiba Mobile. Our team will review your application 
-              and contact you within 24 hours to discuss next steps.
+              {successData?.message || "Thank you for your interest in Jiba Mobile. Our team will review your application and contact you within 24 hours to discuss next steps."}
             </p>
+            <div className="text-sm text-gray-500 mb-4">
+              Application ID: {successData?.id}
+            </div>
             <div className="text-sm text-gray-500">
               You should receive a confirmation email shortly at {formData.email}
             </div>
@@ -93,6 +122,16 @@ const Contact = () => {
               Apply for Device Financing
             </h3>
             
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                <AlertCircle className="text-red-500 mr-3 mt-0.5" size={20} />
+                <div>
+                  <p className="text-red-800 font-medium">Application Error</p>
+                  <p className="text-red-600 text-sm mt-1">{error}</p>
+                </div>
+              </div>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Full Name */}
               <div>
@@ -102,12 +141,13 @@ const Contact = () => {
                 </label>
                 <input
                   type="text"
-                  name="fullName"
-                  value={formData.fullName}
+                  name="full_name"
+                  value={formData.full_name}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your full name"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -125,6 +165,7 @@ const Contact = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your email"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -142,6 +183,7 @@ const Contact = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your phone number"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -157,6 +199,7 @@ const Contact = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   required
+                  disabled={isSubmitting}
                 >
                   <option value="">Select your country</option>
                   {countries.map((country) => (
@@ -174,11 +217,12 @@ const Contact = () => {
                   Business Type *
                 </label>
                 <select
-                  name="businessType"
-                  value={formData.businessType}
+                  name="business_type"
+                  value={formData.business_type}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   required
+                  disabled={isSubmitting}
                 >
                   <option value="">Select your business type</option>
                   {businessTypes.map((type) => (
@@ -201,6 +245,7 @@ const Contact = () => {
                   rows="4"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                   placeholder="Describe your business and how a smartphone/POS device would help you grow..."
+                  disabled={isSubmitting}
                 />
               </div>
 
